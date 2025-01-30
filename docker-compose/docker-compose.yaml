@@ -1,9 +1,9 @@
-
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15
+  postgres:
+    image: bitnami/postgresql:14
+    hostname: postgres
     container_name: productservice_db
     environment:
       POSTGRES_DB: testdb
@@ -14,6 +14,8 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
 
 volumes:
   db_data:
+    driver: local

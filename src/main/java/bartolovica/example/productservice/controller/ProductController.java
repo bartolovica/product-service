@@ -5,7 +5,6 @@ import bartolovica.example.productservice.model.ProductResponse;
 import bartolovica.example.productservice.model.dto.Product;
 import bartolovica.example.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,7 +15,6 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j
 @RequestMapping("/product")
 @RequiredArgsConstructor
 @RestController
@@ -26,7 +24,6 @@ public class ProductController {
 
     @PostMapping
     public Mono<ResponseEntity<Product>> createProduct(@Validated @RequestBody ProductRequest productRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        log.info("User {} is creating product", userDetails.getUsername());
         return productService.createProduct(productRequest, userDetails)
                 .map(product -> ResponseEntity.ok().body(product))
                 .defaultIfEmpty(ResponseEntity.badRequest().build());

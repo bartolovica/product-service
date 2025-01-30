@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -55,7 +56,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.requestToProduct(productRequest)
                 .toBuilder()
                 .id(UUID.randomUUID())
-                .priceUsd(productRequest.priceEur().multiply(conversionRate))
+                .priceUsd(productRequest.priceEur().multiply(conversionRate).setScale(3, RoundingMode.HALF_UP))
                 .conversionRate(conversionRate)
                 .createdAt(LocalDateTime.now())
                 .createdBy(username)

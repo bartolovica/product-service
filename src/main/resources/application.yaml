@@ -57,7 +57,7 @@ conversion-rate-api:
 
 job:
   update-conversion-rate:
-    cron: "0 */1 * * * *" # every 6 hours "0 0 */6 * * *"
+    cron: "0 0 */6 * * *"
 
 test-users:
   admin:
