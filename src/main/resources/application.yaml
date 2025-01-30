@@ -1,0 +1,70 @@
+server:
+  port: ${SERVER_PORT:9999}
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: product-service
+  codec:
+    max-in-memory-size: 40MB
+  webflux:
+    static-path-pattern: /static/**
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/testdb}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:password}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/
+    tags-sorter: alpha
+    operations-sorter: alpha
+  writer-with-order-by-keys: true
+  override-with-generated-openapi-info: false
+
+management:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoints:
+    web:
+      exposure:
+        include: metrics,prometheus,health
+      cors:
+        allowed-headers: '*'
+        allowed-methods: '*'
+        allowed-origins: '*'
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+
+conversion-rate-api:
+  request:
+    timeout-millis: 200000
+    max-attempts: 3
+    min-backoff: 1
+  conversion-provider-base-url: https://api.hnb.hr/tecajn-eur/v3
+  query-params:
+    currency: valuta
+    date: datum-primjene
+    currency-value: USD
+
+  rest-client-min-backoff: 100
+  rest-client-timeout-millis: 60000
+
+job:
+  update-conversion-rate:
+    cron: "0 */1 * * * *" # every 6 hours "0 0 */6 * * *"
+
+test-users:
+  admin:
+    username: admin
+    password: admin123
+    roles: ADMIN
+  customer:
+    username: customer
+    password: customer123
+    roles: CUSTOMER
