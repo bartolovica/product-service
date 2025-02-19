@@ -35,9 +35,6 @@ public class Product {
     @DecimalMin(value = "0.0")
     private BigDecimal priceEur;
 
-    @DecimalMin(value = "0.0")
-    private BigDecimal priceUsd;
-
     @NotNull
     private Boolean isAvailable;
 

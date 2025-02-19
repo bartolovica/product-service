@@ -22,10 +22,10 @@ public class R2dbcProductRepositoryImpl implements ProductRepository {
     private final R2dbcEntityTemplate r2dbc;
 
     private static final String PRODUCT_EXISTS_BY_CODE = "SELECT EXISTS(SELECT 1 FROM product WHERE code = :code)";
-    private static final String SAVE_PRODUCT = "INSERT INTO product (id, code, name, priceeur, priceusd, isavailable, conversionrate, createdby, createdat, updatedby, updatedat) VALUES (:id, :code, :name, :priceEur, :priceUsd, :isAvailable, :conversionRate, :createdBy, :createdAt, :updatedBy, :updatedAt)";
+    private static final String SAVE_PRODUCT = "INSERT INTO product (id, code, name, priceeur, isavailable, conversionrate, createdby, createdat, updatedby, updatedat) VALUES (:id, :code, :name, :priceEur, :isAvailable, :conversionRate, :createdBy, :createdAt, :updatedBy, :updatedAt)";
     private static final String GET_PRODUCT_BY_CODE_AND_ID = "SELECT * FROM product WHERE code = :code AND id = :id";
-    private static final String GET_PRODUCTS = "SELECT id, code, name, priceeur, priceusd, isavailable FROM product";
-    private static final String GET_PRODUCTS_PAGED = "SELECT id, code, name, priceeur, priceusd, isavailable FROM product LIMIT :size OFFSET :offset";
+    private static final String GET_PRODUCTS = "SELECT id, code, name, priceeur, isavailable FROM product";
+    private static final String GET_PRODUCTS_PAGED = "SELECT id, code, name, priceeur, isavailable FROM product LIMIT :size OFFSET :offset";
     private static final String UPDATE_PRODUCT_USD_PRICE = "UPDATE product SET priceusd = priceeur * :conversionRate, conversionrate = :conversionRate, updatedby = :updatedBy, updatedat = :updatedAt WHERE conversionrate != :conversionRate";
 
     @Override
@@ -38,14 +38,13 @@ public class R2dbcProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public Mono<Product> saveProduct(Product product) {
+    public Mono<ProductResponse> saveProduct(Product product) {
         return r2dbc.getDatabaseClient()
                 .sql(SAVE_PRODUCT)
                 .bind("id", product.getId())
                 .bind("code", product.getCode())
                 .bind("name", product.getName())
                 .bind("priceEur", product.getPriceEur())
-                .bind("priceUsd", product.getPriceUsd())
                 .bind("isAvailable", product.getIsAvailable())
                 .bind("conversionRate", product.getConversionRate())
                 .bind("createdBy", product.getCreatedBy())
@@ -53,7 +52,13 @@ public class R2dbcProductRepositoryImpl implements ProductRepository {
                 .bind("updatedBy", product.getUpdatedBy())
                 .bind("updatedAt", product.getUpdatedAt())
                 .then()
-                .thenReturn(product);
+                .thenReturn(ProductResponse.builder()
+                        .id(product.getId())
+                        .code(product.getCode())
+                        .name(product.getName())
+                        .priceEur(product.getPriceEur())
+                        .isAvailable(product.getIsAvailable())
+                        .build());
     }
 
     @Override
@@ -103,7 +108,6 @@ public class R2dbcProductRepositoryImpl implements ProductRepository {
                 .code(row.get("code", String.class))
                 .name(row.get("name", String.class))
                 .priceEur(row.get("priceeur", BigDecimal.class))
-                .priceUsd(row.get("priceusd", BigDecimal.class))
                 .isAvailable(row.get("isavailable", Boolean.class))
                 .build();
     }

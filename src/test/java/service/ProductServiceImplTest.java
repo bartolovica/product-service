@@ -18,14 +18,18 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 class ProductServiceImplTest {
+
+    private static final BigDecimal CONVERSION_RATE = BigDecimal.valueOf(1.2);
 
     @Mock
     private ProductRepository productRepository;
@@ -50,22 +54,30 @@ class ProductServiceImplTest {
     @Test
     void createProductSuccessfully() {
         ProductRequest productRequest = ProductRequest.builder()
-                .code("testCode")
+                .code("123456789")
                 .name("testName")
-                .priceEur(BigDecimal.valueOf(100))
+                .priceEur(BigDecimal.valueOf(120))
                 .isAvailable(true)
                 .build();
-        BigDecimal conversionRate = BigDecimal.valueOf(1.2);
+        ProductResponse productResponse = getProductResponse();
         Product product = new Product();
-        when(conversionRateCache.get("usdToEur")).thenReturn(CompletableFuture.completedFuture(conversionRate));
+        when(conversionRateCache.get("usdToEur")).thenReturn(CompletableFuture.completedFuture(CONVERSION_RATE));
         when(productMapper.requestToProduct(any())).thenReturn(product);
-        when(productRepository.saveProduct(any())).thenReturn(Mono.just(product));
+        when(productRepository.saveProduct(any())).thenReturn(Mono.just(productResponse));
         when(userDetails.getUsername()).thenReturn("testUser");
 
-        Mono<Product> result = productServiceImpl.createProduct(productRequest, userDetails);
+        Mono<ProductResponse> result = productServiceImpl.createProduct(productRequest, userDetails);
+
 
         StepVerifier.create(result)
-                .expectNext(product)
+                .assertNext(response -> {
+                    assertEquals(productResponse.id(), response.id());
+                    assertEquals(productResponse.priceEur(), response.priceEur());
+                    assertEquals(productResponse.priceEur().multiply(CONVERSION_RATE).setScale(3, RoundingMode.HALF_UP), response.priceUsd());
+                    assertEquals(productResponse.name(), response.name());
+                    assertEquals(productResponse.code(), response.code());
+                    assertEquals(productResponse.isAvailable(), response.isAvailable());
+                })
                 .verifyComplete();
     }
 
@@ -74,7 +86,7 @@ class ProductServiceImplTest {
         ProductRequest productRequest = ProductRequest.builder().build();
         when(conversionRateCache.get("usdToEur")).thenReturn(CompletableFuture.failedFuture(new RuntimeException("Cache error")));
 
-        Mono<Product> result = productServiceImpl.createProduct(productRequest, userDetails);
+        Mono<ProductResponse> result = productServiceImpl.createProduct(productRequest, userDetails);
 
         StepVerifier.create(result)
                 .expectError(RuntimeException.class)
@@ -86,12 +98,20 @@ class ProductServiceImplTest {
         UUID id = UUID.randomUUID();
         String code = "testCode";
         var productResponse = getProductResponse();
+        when(conversionRateCache.get("usdToEur")).thenReturn(CompletableFuture.completedFuture(CONVERSION_RATE));
         when(productRepository.getProductByCodeAndId(code, id)).thenReturn(Mono.just(productResponse));
 
         Mono<ProductResponse> result = productServiceImpl.getProductByIdAndCode(code, id);
 
         StepVerifier.create(result)
-                .expectNext(productResponse)
+                .assertNext(response -> {
+                    assertEquals(productResponse.id(), response.id());
+                    assertEquals(productResponse.priceEur(), response.priceEur());
+                    assertEquals(productResponse.priceEur().multiply(CONVERSION_RATE).setScale(3, RoundingMode.HALF_UP), response.priceUsd());
+                    assertEquals(productResponse.name(), response.name());
+                    assertEquals(productResponse.code(), response.code());
+                    assertEquals(productResponse.isAvailable(), response.isAvailable());
+                })
                 .verifyComplete();
     }
 
@@ -99,11 +119,20 @@ class ProductServiceImplTest {
     void getProductsSuccessfully() {
         var productResponse = getProductResponse();
         when(productRepository.getProducts()).thenReturn(Flux.just(productResponse));
-
+        when(conversionRateCache.get("usdToEur")).thenReturn(CompletableFuture.completedFuture(CONVERSION_RATE));
         Mono<List<ProductResponse>> result = productServiceImpl.getProducts();
 
         StepVerifier.create(result)
-                .expectNext(List.of(productResponse))
+                .assertNext(responseList -> {
+                    assertEquals(1, responseList.size());
+                    final var response = responseList.get(0);
+                    assertEquals(productResponse.id(), response.id());
+                    assertEquals(productResponse.priceEur(), response.priceEur());
+                    assertEquals(productResponse.priceEur().multiply(CONVERSION_RATE).setScale(3, RoundingMode.HALF_UP), response.priceUsd());
+                    assertEquals(productResponse.name(), response.name());
+                    assertEquals(productResponse.code(), response.code());
+                    assertEquals(productResponse.isAvailable(), response.isAvailable());
+                })
                 .verifyComplete();
     }
 
@@ -112,17 +141,32 @@ class ProductServiceImplTest {
         int page = 0;
         int size = 10;
         var productResponse = getProductResponse();
+        when(conversionRateCache.get("usdToEur")).thenReturn(CompletableFuture.completedFuture(CONVERSION_RATE));
         when(productRepository.getProductsPaged(page, size)).thenReturn(Flux.just(productResponse));
 
         Mono<List<ProductResponse>> result = productServiceImpl.getProductsPaged(page, size);
 
         StepVerifier.create(result)
-                .expectNext(List.of(productResponse))
+                .assertNext(responseList -> {
+                    assertEquals(1, responseList.size());
+                    final var response = responseList.get(0);
+                    assertEquals(productResponse.id(), response.id());
+                    assertEquals(productResponse.priceEur(), response.priceEur());
+                    assertEquals(productResponse.priceEur().multiply(CONVERSION_RATE).setScale(3, RoundingMode.HALF_UP), response.priceUsd());
+                    assertEquals(productResponse.name(), response.name());
+                    assertEquals(productResponse.code(), response.code());
+                    assertEquals(productResponse.isAvailable(), response.isAvailable());
+                })
                 .verifyComplete();
     }
 
     private ProductResponse getProductResponse() {
         return ProductResponse.builder()
+                .id(UUID.randomUUID())
+                .priceEur(BigDecimal.valueOf(120))
+                .name("testName")
+                .code("123456789")
+                .isAvailable(true)
                 .build();
     }
 }

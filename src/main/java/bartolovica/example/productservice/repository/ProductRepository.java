@@ -12,7 +12,7 @@ public interface ProductRepository {
 
     Mono<Boolean> productExistsByCode(String code);
 
-    Mono<Product> saveProduct(Product product);
+    Mono<ProductResponse> saveProduct(Product product);
 
     Mono<ProductResponse> getProductByCodeAndId(String code, UUID id);
 

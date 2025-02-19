@@ -17,7 +17,6 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
 @Service
@@ -28,35 +27,44 @@ public class ProductServiceImpl implements ProductService {
     private final ProductMapper productMapper;
 
     @Override
-    public Mono<Product> createProduct(ProductRequest productRequest, UserDetails userDetails) {
-        CompletableFuture<BigDecimal> future = conversionRateCache.get("usdToEur");
-        return Mono.fromFuture(future)
+    public Mono<ProductResponse> createProduct(ProductRequest productRequest, UserDetails userDetails) {
+        return Mono.fromFuture(conversionRateCache.get("usdToEur"))
                 .map(conversionRate -> buildProduct(productRequest, conversionRate, userDetails.getUsername()))
-                .flatMap(productRepository::saveProduct);
+                .flatMap(productRepository::saveProduct)
+                .flatMap(this::buildProductResponse);
     }
 
     @Override
     public Mono<ProductResponse> getProductByIdAndCode(String code, UUID id) {
-        return productRepository.getProductByCodeAndId(code, id);
+        return productRepository.getProductByCodeAndId(code, id)
+                .flatMap(this::buildProductResponse);
     }
 
     @Override
     public Mono<List<ProductResponse>> getProducts() {
         return productRepository.getProducts()
+                .flatMap(this::buildProductResponse)
                 .collectList();
     }
 
     @Override
     public Mono<List<ProductResponse>> getProductsPaged(int page, int size) {
         return productRepository.getProductsPaged(page, size)
+                .flatMap(this::buildProductResponse)
                 .collectList();
+    }
+
+    private Mono<ProductResponse> buildProductResponse(ProductResponse product) {
+        return Mono.fromFuture(conversionRateCache.get("usdToEur"))
+                .map(conversionRate -> product.toBuilder()
+                        .priceUsd(product.priceEur().multiply(conversionRate).setScale(3, RoundingMode.HALF_UP))
+                        .build());
     }
 
     private Product buildProduct(ProductRequest productRequest, BigDecimal conversionRate, String username) {
         return productMapper.requestToProduct(productRequest)
                 .toBuilder()
                 .id(UUID.randomUUID())
-                .priceUsd(productRequest.priceEur().multiply(conversionRate).setScale(3, RoundingMode.HALF_UP))
                 .conversionRate(conversionRate)
                 .createdAt(LocalDateTime.now())
                 .createdBy(username)

@@ -2,7 +2,6 @@ package bartolovica.example.productservice.controller;
 
 import bartolovica.example.productservice.model.ProductRequest;
 import bartolovica.example.productservice.model.ProductResponse;
-import bartolovica.example.productservice.model.dto.Product;
 import bartolovica.example.productservice.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +22,7 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
-    public Mono<ResponseEntity<Product>> createProduct(@Validated @RequestBody ProductRequest productRequest, @AuthenticationPrincipal UserDetails userDetails) {
+    public Mono<ResponseEntity<ProductResponse>> createProduct(@Validated @RequestBody ProductRequest productRequest, @AuthenticationPrincipal UserDetails userDetails) {
         return productService.createProduct(productRequest, userDetails)
                 .map(product -> ResponseEntity.ok().body(product))
                 .defaultIfEmpty(ResponseEntity.badRequest().build());

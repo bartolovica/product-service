@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS public.product (
                                               code varchar(10) NOT NULL,
     name varchar(255) NOT NULL,
     priceeur numeric(10, 3) NULL,
-    priceusd numeric(10, 3) NULL,
     isavailable bool DEFAULT true NULL,
     conversionrate numeric(19, 4) NULL,
     createdby varchar(255) NULL,
